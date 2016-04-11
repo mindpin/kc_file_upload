@@ -1,5 +1,4 @@
 class UploadController < ApplicationController
-  FILE_BASE_PATH = Rails.root.join("public/static")
   before_filter :set_access_control_headers
   def set_access_control_headers
     response.headers['Access-Control-Allow-Methods']  = 'OPTIONS, HEAD, POST'
@@ -26,11 +25,8 @@ class UploadController < ApplicationController
   def upload
     response.headers['Access-Control-Allow-Headers']  = 'X-File-Name, X-File-Type, X-File-Size'
 
-    file_save_path = File.join FILE_BASE_PATH, params[:key]
-    FileUtils.mkdir_p(File.dirname(file_save_path))
-    FileUtils.mv params[:file].path, file_save_path
-    mime_type = MIME::Types.type_for(file_save_path).first
-    mime = mime_type.blank? ? "application/octet-stream" : mime_type.to_s
+    sfu = SingleChunkFileUpload.new params[:key]
+    sfu.copy params[:file]
 
     result = {
       "bucket"                 => "glusterfs" ,
@@ -38,7 +34,7 @@ class UploadController < ApplicationController
       "file_size"              => params[:file].size,
       "image_rgb"              => nil,
       "original"               => params[:name],
-      "mime"                   => mime,
+      "mime"                   => mime_type_by_name(params[:key]),
       "image_width"            => 0,
       "image_height"           => 0,
       "avinfo_format"          => nil,
@@ -59,23 +55,22 @@ class UploadController < ApplicationController
 
   def mkblk
     response.headers['Access-Control-Allow-Headers']  = 'X-File-Name, X-File-Type, X-File-Size'
-    ctx_arr = [
-      urlsafe_base64_encode("#{request.remote_ip}:#{get_deadline_from_authorization}"),
-      urlsafe_base64_encode(params[:name]),
-      params[:chunks],
-      params[:chunk]
-    ]
 
-    file_save_path = File.join FILE_BASE_PATH, ctx_arr[0], ctx_arr[1], ctx_arr[2], ctx_arr[3]
-    merge_file_save_path = File.join FILE_BASE_PATH, ctx_arr[0], ctx_arr[1], ctx_arr[2], "merge"
-    FileUtils.mkdir_p(File.dirname(file_save_path))
-    IO.copy_stream request.body, file_save_path
-    success = `cat #{file_save_path} >> #{merge_file_save_path}; echo $?` == "0\n"
+    ctx = Ctx.new(
+      deadline: get_deadline_from_authorization,
+      ip:       request.remote_ip,
+      name:     params[:name],
+      chunks:   params[:chunks],
+      chunk:    params[:chunk]
+    )
+
+    mfuc = MutilChunkFileUpload::Chunk.new ctx
+    success = mfuc.copy request.body
 
     return render text: 500, status: 500 if !success
 
     result = {
-      "ctx"      => ctx_arr.join(":"),
+      "ctx"      => ctx.to_s,
       "offset"   => params[:block_size]
     }
     render json: result
@@ -84,22 +79,13 @@ class UploadController < ApplicationController
   def mkfile
     response.headers['Access-Control-Allow-Headers']  = 'X-File-Name, X-File-Type, X-File-Size'
 
-    key = urlsafe_base64_decode params[:encoded_key]
+    key = UrlsafeBase64.decode params[:encoded_key]
     original = x_vars_hash_from_param["x:original"]
 
-    ctx_arr = request.body.read.split(",").map do |ctx|
-      ctx.split(":")
-    end.last
+    ctx_list = request.body.read.split(",").map {|str| Ctx.parse(str)}
 
-    chunks_dir = File.join FILE_BASE_PATH, ctx_arr[0], ctx_arr[1], ctx_arr[2]
-    merge_file_save_path = File.join chunks_dir, "merge"
-
-    file_save_path = File.join FILE_BASE_PATH, key
-    FileUtils.mkdir_p(File.dirname(file_save_path))
-    FileUtils.mv merge_file_save_path, file_save_path
-
-    mime_type = MIME::Types.type_for(file_save_path).first
-    mime = mime_type.blank? ? "application/octet-stream" : mime_type.to_s
+    mc = MutilChunkFileUpload::MergeChunk.new ctx_list
+    mc.merge(key)
 
     result = {
       "bucket"                 => "glusterfs" ,
@@ -107,7 +93,7 @@ class UploadController < ApplicationController
       "file_size"              => params[:file_size],
       "image_rgb"              => nil,
       "original"               => original,
-      "mime"                   => mime,
+      "mime"                   => mime_type_by_name(key),
       "image_width"            => 0,
       "image_height"           => 0,
       "avinfo_format"          => nil,
@@ -130,17 +116,9 @@ class UploadController < ApplicationController
 
   def get_deadline_from_authorization
     encoded_put_policy = request.headers["authorization"].split(" ").last.split(":").last
-    put_policy_json = Base64.decode64 encoded_put_policy.gsub('_','/').gsub('-', '+')
+    put_policy_json = UrlsafeBase64.decode encoded_put_policy
     put_policy      = JSON.parse put_policy_json
     put_policy["deadline"]
-  end
-
-  def urlsafe_base64_encode content
-    Base64.encode64(content).strip.gsub('+', '-').gsub('/','_').gsub(/\r?\n/, '')
-  end
-
-  def urlsafe_base64_decode encoded_content
-    Base64.decode64 encoded_content.gsub('_','/').gsub('-', '+')
   end
 
   def x_vars_hash_from_param
@@ -153,6 +131,9 @@ class UploadController < ApplicationController
     x_vars_hash
   end
 
-
+  def mime_type_by_name(file_name)
+    mime_type = MIME::Types.type_for(file_name).first
+    mime_type.blank? ? "application/octet-stream" : mime_type.to_s
+  end
 
 end
