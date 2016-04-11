@@ -1,6 +1,4 @@
 class Ctx
-  FILE_BASE_PATH = Rails.root.join("public/static")
-
   def initialize(options)
     @deadline = options[:deadline].to_s
     @ip       = options[:ip].to_s
@@ -19,11 +17,11 @@ class Ctx
   end
 
   def chunk_file_path
-    File.join FILE_BASE_PATH, @deadline, @encode_ip, @encode_name, @chunks, @chunk
+    File.join ENV["upload_file_base_path"], @deadline, @encode_ip, @encode_name, @chunks, @chunk
   end
 
   def merge_file_path
-    File.join FILE_BASE_PATH, @deadline, @encode_ip, @encode_name, @chunks, "merge"
+    File.join ENV["upload_file_base_path"], @deadline, @encode_ip, @encode_name, @chunks, "merge"
   end
 
   def to_s

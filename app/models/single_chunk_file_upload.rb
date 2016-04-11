@@ -1,9 +1,7 @@
 class SingleChunkFileUpload
-  FILE_BASE_PATH = Rails.root.join("public/static")
-
   def initialize(save_key)
     @save_key = save_key
-    @file_save_path = File.join FILE_BASE_PATH, save_key
+    @file_save_path = File.join ENV["upload_file_base_path"], save_key
   end
 
   def copy(upload_file)

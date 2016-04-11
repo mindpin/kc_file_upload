@@ -1,6 +1,4 @@
 module MutilChunkFileUpload
-  FILE_BASE_PATH = Rails.root.join("public/static")
-
   class Chunk
     def initialize(ctx)
       @ctx = ctx
@@ -19,7 +17,7 @@ module MutilChunkFileUpload
     end
 
     def merge(key)
-      file_save_path = File.join FILE_BASE_PATH, key
+      file_save_path = File.join ENV["upload_file_base_path"], key
       FileUtils.mkdir_p(File.dirname( file_save_path ))
       FileUtils.mv @ctx_list.last.merge_file_path, file_save_path
     end
