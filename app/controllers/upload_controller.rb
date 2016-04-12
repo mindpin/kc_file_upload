@@ -80,7 +80,8 @@ class UploadController < ApplicationController
     response.headers['Access-Control-Allow-Headers']  = 'X-File-Name, X-File-Type, X-File-Size'
 
     key = UrlsafeBase64.decode params[:encoded_key]
-    original = x_vars_hash_from_param["x:original"]
+    encoded_original = x_vars_hash_from_param["x:original"]
+    original = UrlsafeBase64.decode(encoded_original).force_encoding('UTF-8')
 
     ctx_list = request.body.read.split(",").map {|str| Ctx.parse(str)}
 

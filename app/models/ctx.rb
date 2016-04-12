@@ -16,12 +16,16 @@ class Ctx
     @encode_name = UrlsafeBase64.encode @name
   end
 
+  def upload_file_tmp_chunks_path
+    File.join ENV["upload_file_base_path"], "tmp", "chunks"
+  end
+
   def chunk_file_path
-    File.join ENV["upload_file_base_path"], @deadline, @encode_ip, @encode_name, @chunks, @chunk
+    File.join upload_file_tmp_chunks_path, @deadline, @encode_ip, @encode_name, @chunks, @chunk
   end
 
   def merge_file_path
-    File.join ENV["upload_file_base_path"], @deadline, @encode_ip, @encode_name, @chunks, "merge"
+    File.join upload_file_tmp_chunks_path, @deadline, @encode_ip, @encode_name, @chunks, "merge"
   end
 
   def to_s
