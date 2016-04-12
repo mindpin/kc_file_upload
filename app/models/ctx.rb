@@ -14,6 +14,8 @@ class Ctx
 
     @encode_ip   = UrlsafeBase64.encode @ip
     @encode_name = UrlsafeBase64.encode @name
+
+    @time_stamp = Time.zone.at(@deadline.to_i).strftime("%Y%m%d")
   end
 
   def upload_file_tmp_chunks_path
@@ -21,11 +23,11 @@ class Ctx
   end
 
   def chunk_file_path
-    File.join upload_file_tmp_chunks_path, @deadline, @encode_ip, @encode_name, @chunks, @chunk
+    File.join upload_file_tmp_chunks_path, @time_stamp, @deadline, @encode_ip, @encode_name, @chunks, @chunk
   end
 
   def merge_file_path
-    File.join upload_file_tmp_chunks_path, @deadline, @encode_ip, @encode_name, @chunks, "merge"
+    File.join upload_file_tmp_chunks_path, @time_stamp, @deadline, @encode_ip, @encode_name, @chunks, "merge"
   end
 
   def to_s
