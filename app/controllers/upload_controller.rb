@@ -34,7 +34,7 @@ class UploadController < ApplicationController
       "file_size"              => params[:file].size,
       "image_rgb"              => nil,
       "original"               => params[:name],
-      "mime"                   => mime_type_by_name(params[:key]),
+      "mime"                   => MimeTypeUtil.get_mime_by_file_name(params[:key]),
       "image_width"            => 0,
       "image_height"           => 0,
       "avinfo_format"          => nil,
@@ -94,7 +94,7 @@ class UploadController < ApplicationController
       "file_size"              => params[:file_size],
       "image_rgb"              => nil,
       "original"               => original,
-      "mime"                   => mime_type_by_name(key),
+      "mime"                   => MimeTypeUtil.get_mime_by_file_name(key),
       "image_width"            => 0,
       "image_height"           => 0,
       "avinfo_format"          => nil,
@@ -144,11 +144,6 @@ class UploadController < ApplicationController
       x_vars_hash[arr[i*2]] = arr[i*2+1]
     end
     x_vars_hash
-  end
-
-  def mime_type_by_name(file_name)
-    mime_type = MIME::Types.type_for(file_name).first
-    mime_type.blank? ? "application/octet-stream" : mime_type.to_s
   end
 
 end
