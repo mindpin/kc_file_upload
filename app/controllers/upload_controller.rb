@@ -29,7 +29,7 @@ class UploadController < ApplicationController
     sfu.copy params[:file]
 
     result = {
-      "bucket"                 => "glusterfs" ,
+      "bucket"                 => get_bucket_from_params,
       "token"                  => params[:key],
       "file_size"              => params[:file].size,
       "image_rgb"              => nil,
@@ -89,7 +89,7 @@ class UploadController < ApplicationController
     mc.merge(key)
 
     result = {
-      "bucket"                 => "glusterfs" ,
+      "bucket"                 => get_bucket_from_authorization,
       "token"                  => key,
       "file_size"              => params[:file_size],
       "image_rgb"              => nil,
@@ -116,10 +116,24 @@ class UploadController < ApplicationController
   private
 
   def get_deadline_from_authorization
-    encoded_put_policy = request.headers["authorization"].split(" ").last.split(":").last
-    put_policy_json = UrlsafeBase64.decode encoded_put_policy
-    put_policy      = JSON.parse put_policy_json
-    put_policy["deadline"]
+    _get_put_policy_form_authorization["deadline"]
+  end
+
+  def get_bucket_from_authorization
+    _get_put_policy_form_authorization["scope"]
+  end
+
+  def get_bucket_from_params
+    _get_put_policy_form_uptoken(params[:token])["scope"]
+  end
+
+  def _get_put_policy_form_uptoken(uptoken)
+    JSON.parse( UrlsafeBase64.decode( uptoken.split(":").last ) )
+  end
+
+  def _get_put_policy_form_authorization
+    uptoken = request.headers["authorization"].split(" ").last
+    _get_put_policy_form_uptoken(uptoken)
   end
 
   def x_vars_hash_from_param
