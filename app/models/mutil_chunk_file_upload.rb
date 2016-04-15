@@ -20,6 +20,7 @@ module MutilChunkFileUpload
       file_save_path = File.join ENV["upload_file_base_path"], key
       FileUtils.mkdir_p(File.dirname( file_save_path ))
       FileUtils.mv @ctx_list.last.merge_file_path, file_save_path
+      FileUtils.chmod 0664, file_save_path
     end
   end
 end

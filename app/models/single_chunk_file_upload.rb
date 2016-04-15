@@ -7,6 +7,7 @@ class SingleChunkFileUpload
   def copy(upload_file)
     FileUtils.mkdir_p(File.dirname(@file_save_path))
     FileUtils.mv upload_file.path, @file_save_path
+    FileUtils.chmod 0664, @file_save_path
   end
 
 end
