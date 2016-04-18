@@ -28,27 +28,12 @@ class UploadController < ApplicationController
     sfu = SingleChunkFileUpload.new params[:key]
     sfu.copy params[:file]
 
-    result = {
-      "bucket"                 => get_bucket_from_params,
-      "token"                  => params[:key],
-      "file_size"              => params[:file].size,
-      "image_rgb"              => nil,
-      "original"               => params[:name],
-      "mime"                   => MimeTypeUtil.get_mime_by_file_name(params[:key]),
-      "image_width"            => 0,
-      "image_height"           => 0,
-      "avinfo_format"          => nil,
-      "avinfo_total_bit_rate"  => nil,
-      "avinfo_total_duration"  => nil,
-      "avinfo_video_codec_name"=> nil,
-      "avinfo_video_bit_rate"  => nil,
-      "avinfo_video_duration"  => nil,
-      "avinfo_height"          => nil,
-      "avinfo_width"           => nil,
-      "avinfo_audio_codec_name"=> nil,
-      "avinfo_audio_bit_rate"  => nil,
-      "avinfo_audio_duration"  => nil
-    }
+    result = result_file_info(
+      get_bucket_from_params,
+      params[:key],
+      params[:file].size,
+      params[:name],
+      MimeTypeUtil.get_mime_by_file_name(params[:key]))
 
     render json: result
   end
@@ -88,32 +73,44 @@ class UploadController < ApplicationController
     mc = MutilChunkFileUpload::MergeChunk.new ctx_list
     mc.merge(key)
 
-    result = {
-      "bucket"                 => get_bucket_from_authorization,
-      "token"                  => key,
-      "file_size"              => params[:file_size],
-      "image_rgb"              => nil,
-      "original"               => original,
-      "mime"                   => MimeTypeUtil.get_mime_by_file_name(key),
-      "image_width"            => 0,
-      "image_height"           => 0,
-      "avinfo_format"          => nil,
-      "avinfo_total_bit_rate"  => nil,
-      "avinfo_total_duration"  => nil,
-      "avinfo_video_codec_name"=> nil,
-      "avinfo_video_bit_rate"  => nil,
-      "avinfo_video_duration"  => nil,
-      "avinfo_height"          => nil,
-      "avinfo_width"           => nil,
-      "avinfo_audio_codec_name"=> nil,
-      "avinfo_audio_bit_rate"  => nil,
-      "avinfo_audio_duration"  => nil
-    }
+    result = result_file_info(
+      get_bucket_from_authorization,
+      key,
+      params[:file_size],
+      original,
+      MimeTypeUtil.get_mime_by_file_name(key))
 
     render json: result
   end
 
   private
+
+  def result_file_info(bucket, key, file_size, original, mime)
+    file_info = FileInfo.new key
+    info      = file_info.info
+
+    result = {
+      "bucket"                 => bucket,
+      "token"                  => key,
+      "file_size"              => file_size,
+      "image_rgb"              => info["image_rgb"],
+      "original"               => original,
+      "mime"                   => mime,
+      "image_width"            => info["image_width"],
+      "image_height"           => info["image_height"],
+      "avinfo_format"          => info["avinfo_format"],
+      "avinfo_total_bit_rate"  => info["avinfo_total_bit_rate"],
+      "avinfo_total_duration"  => info["avinfo_total_duration"],
+      "avinfo_video_codec_name"=> info["avinfo_video_codec_name"],
+      "avinfo_video_bit_rate"  => info["avinfo_video_bit_rate"],
+      "avinfo_video_duration"  => info["avinfo_video_duration"],
+      "avinfo_height"          => info["avinfo_height"],
+      "avinfo_width"           => info["avinfo_width"],
+      "avinfo_audio_codec_name"=> info["avinfo_audio_codec_name"],
+      "avinfo_audio_bit_rate"  => info["avinfo_audio_bit_rate"],
+      "avinfo_audio_duration"  => info["avinfo_audio_duration"]
+    }
+  end
 
   def get_deadline_from_authorization
     _get_put_policy_form_authorization["deadline"]

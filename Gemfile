@@ -1,4 +1,4 @@
-source 'https://rubygems.org'
+source 'https://ruby.taobao.org'
 
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
@@ -43,3 +43,7 @@ end
 
 gem 'figaro', '~> 1.1'
 gem "unicorn"
+
+
+gem 'streamio-ffmpeg', '1.0.0'
+gem "mini_magick", '3.7.0'
