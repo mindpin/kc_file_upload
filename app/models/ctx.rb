@@ -30,6 +30,10 @@ class Ctx
     File.join upload_file_tmp_chunks_path, @time_stamp, @deadline, @encode_ip, @encode_name, @chunks, "merge"
   end
 
+  def chunks_file_dir
+    File.join upload_file_tmp_chunks_path, @time_stamp, @deadline, @encode_ip, @encode_name, @chunks
+  end
+
   def to_s
     [@deadline, @encode_ip, @encode_name, @chunks, @chunk].join(":")
   end
